@@ -1,7 +1,7 @@
 import logging
 import os
 import uuid
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import kubernetes as k8s
 
@@ -70,20 +70,13 @@ class KubeSparkManager:
 
         return env_values
 
-    def __init__(self,
-                 username: str,
-                 namespace: Optional[str] = None,
-                 image: Optional[str] = None,
-                 image_pull_policy: str = DEFAULT_IMAGE_PULL_POLICY):
+    def __init__(self, username: str):
         """
         Initialize the KubeSparkManager with user-specific configuration.
         This should only be run inside a kubernetes container.
 
         Args:
             username: Username of the JupyterHub user
-            namespace: Optional override for Kubernetes namespace
-            image: Optional override for Docker image
-            image_pull_policy: Optional override for image pull policy
 
         Raises:
             ValueError: If required environment variables are not set
@@ -92,9 +85,9 @@ class KubeSparkManager:
         env_vars = self.validate_environment()
 
         self.username = username
-        self.namespace = namespace or env_vars["KUBE_NAMESPACE"]
-        self.image = image or env_vars["SPARK_IMAGE"]
-        self.image_pull_policy = image_pull_policy
+        self.namespace = env_vars["KUBE_NAMESPACE"]
+        self.image = env_vars["SPARK_IMAGE"]
+        self.image_pull_policy = self.DEFAULT_IMAGE_PULL_POLICY
 
         # Generate a unique identifier for this user's Spark cluster
         self.cluster_id = f"spark-{username.lower()}-{str(uuid.uuid4())[:8]}"
@@ -108,7 +101,7 @@ class KubeSparkManager:
         self.core_api = k8s.client.CoreV1Api()
         self.apps_api = k8s.client.AppsV1Api()
 
-        logger.info(f"Initialized KubeSparkManager for user {username} in namespace {namespace}")
+        logger.info(f"Initialized KubeSparkManager for user {username} in namespace {self.namespace}")
 
     @staticmethod
     def _prepare_postgres_config() -> List[Dict[str, str]]:
