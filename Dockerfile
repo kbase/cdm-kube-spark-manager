@@ -1,6 +1,17 @@
-FROM python:3.9.13-alpine3.16
+FROM python:3.11-slim
 
-# Install Base Packages
-RUN apk --no-cache add bash curl 
+WORKDIR /app
 
-ENTRYPOINT ["sleep 1d"]
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY src/ .
+
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

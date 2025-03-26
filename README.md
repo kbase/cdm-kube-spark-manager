@@ -1,10 +1,14 @@
-# Template Repo
-Template for new KBase repositories
-For further info on using the KBase default repo template, 
-please see the [KBase Build & Release Guide](https://github.com/kbase/.github/tree/main/guide).
+# CDM Spark Cluster Manager API
 
-## To Do:
+A simple API service for managing Spark clusters in Kubernetes for JupyterHub users. This service acts as an intermediary between user pods and Kubernetes, providing a secure way to manage Spark clusters without requiring direct Kubernetes access.
 
-- [ ] Update this README.md with info about your repository
-- [ ] Modify `Dockerfile` with needed steps (assuming repo produces a Docker image)
-- [ ] Ensure all [branch rules](https://github.com/kbase/.github/blob/develop/guide/enable-branch-rules.md) & [status checks](https://github.com/kbase/.github/blob/develop/guide/enable-branch-rules.md#require-status-checks) are enabled
+## Features
+
+- Create and manage Spark clusters for individual users
+- RESTful API endpoints for cluster management
+- Automatic cleanup of resources
+
+## API Endpoints
+
+### Cluster Management
+(WIP)
