@@ -183,6 +183,7 @@ class KubeSparkManager:
               ] + postgres_env
 
         # Create the deployment spec
+        # TODO: We could use a YAML file as template for the deployment spec.
         deployment = {
             "apiVersion": "apps/v1",
             "kind": "Deployment",
@@ -232,6 +233,7 @@ class KubeSparkManager:
                                     "memory": memory,
                                     "cpu": str(cores)
                                 }
+                                # TODO: Add resource limits if needed
                             }
                         }]
                     }
