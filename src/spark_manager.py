@@ -134,7 +134,7 @@ class KubeSparkManager:
         worker_memory: str = DEFAULT_WORKER_MEMORY,
         master_cores: int = DEFAULT_MASTER_CORES,
         master_memory: str = DEFAULT_MASTER_MEMORY,
-    ) -> Dict:
+    ) -> dict:
         """
         Create a new Spark cluster for the user.
 
