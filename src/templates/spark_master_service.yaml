@@ -20,4 +20,4 @@ spec:
     app: spark
     component: master
     user: ${USERNAME}
-    cluster-id: ${CLUSTER_ID} 
+    cluster-id: ${CLUSTER_ID}
