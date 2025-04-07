@@ -155,7 +155,10 @@ class KubeSparkManager:
         self._create_master_deployment(master_cores, master_memory, postgres_env)
         self._create_master_service()
 
-        # TODO: Create the Spark worker deployment
+        # Create the Spark worker deployment
+        self._create_worker_deployment(
+            worker_count, worker_cores, worker_memory, postgres_env
+        )
 
         # Return cluster information
         master_url = (
@@ -267,8 +270,10 @@ class KubeSparkManager:
                                 ],
                                 "env": env,
                                 "resources": {
-                                    "requests": {"memory": memory, "cpu": str(cores)}
+                                    "requests": {"memory": memory, "cpu": str(cores)},
                                     # TODO: Add resource limits if needed
+                                    # Set limits to same as requests for now
+                                    "limits": {"memory": memory, "cpu": str(cores)},
                                 },
                             }
                         ],
@@ -277,38 +282,9 @@ class KubeSparkManager:
             },
         }
 
-        try:
-            # Try to create the deployment first
-            self.apps_api.create_namespaced_deployment(
-                namespace=self.namespace, body=deployment
-            )
-            logger.info(f"Created Spark master deployment: {self.master_name}")
-        except ApiException as e:
-            if e.status == 409:  # Conflict - already exists
-                try:
-                    # Delete the existing deployment
-                    self.apps_api.delete_namespaced_deployment(
-                        name=self.master_name, namespace=self.namespace
-                    )
-                    logger.info(
-                        f"Deleted existing Spark master deployment: {self.master_name}"
-                    )
-
-                    # Create new deployment
-                    self.apps_api.create_namespaced_deployment(
-                        namespace=self.namespace, body=deployment
-                    )
-                    logger.info(
-                        f"Recreated Spark master deployment: {self.master_name}"
-                    )
-                except ApiException as delete_error:
-                    logger.error(
-                        f"Error replacing Spark master deployment: {delete_error}"
-                    )
-                    raise
-            else:
-                logger.error(f"Error creating Spark master deployment: {e}")
-                raise
+        self._create_or_replace_deployment(
+            deployment, self.master_name, "Spark master deployment"
+        )
 
     def _create_master_service(self):
         """Create a Kubernetes service for the Spark master."""
@@ -347,33 +323,182 @@ class KubeSparkManager:
             },
         }
 
+        self._create_or_replace_service(
+            service, self.master_name, "Spark master service"
+        )
+
+    def _create_worker_deployment(
+        self,
+        worker_count: int,
+        worker_cores: int,
+        worker_memory: str,
+        postgres_env: List[Dict[str, str]],
+    ):
+        """
+        Create the Spark worker deployment.
+
+        Args:
+            worker_count: Number of worker replicas
+            worker_cores: CPU cores per worker
+            worker_memory: Memory allocation per worker
+            postgres_env: Postgres environment variables
+        """
+        # Define Spark worker environment variables
+        env = [
+            {"name": "SPARK_MODE", "value": "worker"},
+            {
+                "name": "SPARK_MASTER_URL",
+                "value": f"spark://{self.master_name}.{self.namespace}:{self.DEFAULT_MASTER_PORT}",
+            },
+            {"name": "SPARK_WORKER_CORES", "value": str(worker_cores)},
+            {"name": "SPARK_WORKER_MEMORY", "value": worker_memory},
+            {
+                "name": "SPARK_WORKER_WEBUI_PORT",
+                "value": str(self.DEFAULT_WORKER_WEBUI_PORT),
+            },
+        ] + postgres_env
+
+        # Create the deployment spec
+        deployment = {
+            "apiVersion": "apps/v1",
+            "kind": "Deployment",
+            "metadata": {
+                "name": self.worker_name,
+                "namespace": self.namespace,
+                "labels": {
+                    "app": "spark",
+                    "component": "worker",
+                    "user": self.username,
+                    "cluster-id": self.cluster_id,
+                },
+            },
+            "spec": {
+                "replicas": worker_count,
+                "selector": {
+                    "matchLabels": {
+                        "app": "spark",
+                        "component": "worker",
+                        "user": self.username,
+                        "cluster-id": self.cluster_id,
+                    }
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "spark",
+                            "component": "worker",
+                            "user": self.username,
+                            "cluster-id": self.cluster_id,
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "spark-worker",
+                                "image": self.image,
+                                "imagePullPolicy": self.image_pull_policy,
+                                "env": env,
+                                "resources": {
+                                    "requests": {
+                                        "memory": worker_memory,
+                                        "cpu": str(worker_cores),
+                                    },
+                                    # TODO: Add resource limits if needed
+                                    # Set limits to same as requests for now
+                                    "limits": {
+                                        "memory": worker_memory,
+                                        "cpu": str(worker_cores),
+                                    },
+                                },
+                            }
+                        ]
+                    },
+                },
+            },
+        }
+
+        self._create_or_replace_deployment(
+            deployment,
+            self.worker_name,
+            f"Spark worker deployment with {worker_count} replicas",
+        )
+
+    def _create_or_replace_service(
+        self, service: Dict, name: str, resource_description: str
+    ) -> None:
+        """
+        Create a Kubernetes service, replacing it if it already exists.
+
+        Args:
+            service: The service definition
+            name: Name of the service
+            resource_description: Description of the resource for logging
+        """
         try:
             # Try to create the service first
             self.core_api.create_namespaced_service(
                 namespace=self.namespace, body=service
             )
-            logger.info(f"Created Spark master service: {self.master_name}")
+            logger.info(f"Created {resource_description}: {name}")
         except ApiException as e:
             if e.status == 409:  # Conflict - already exists
                 try:
                     # Delete the existing service
                     self.core_api.delete_namespaced_service(
-                        name=self.master_name, namespace=self.namespace
+                        name=name, namespace=self.namespace
                     )
-                    logger.info(
-                        f"Deleted existing Spark master service: {self.master_name}"
-                    )
+                    logger.info(f"Deleted existing {resource_description}: {name}")
 
                     # Create new service
                     self.core_api.create_namespaced_service(
                         namespace=self.namespace, body=service
                     )
-                    logger.info(f"Recreated Spark master service: {self.master_name}")
+                    logger.info(f"Recreated {resource_description}: {name}")
                 except ApiException as delete_error:
                     logger.error(
-                        f"Error replacing Spark master service: {delete_error}"
+                        f"Error replacing {resource_description}: {delete_error}"
                     )
                     raise
             else:
-                logger.error(f"Error creating Spark master service: {e}")
+                logger.error(f"Error creating {resource_description}: {e}")
+                raise
+
+    def _create_or_replace_deployment(
+        self, deployment: Dict, name: str, resource_description: str
+    ) -> None:
+        """
+        Create a Kubernetes deployment, replacing it if it already exists.
+
+        Args:
+            deployment: The deployment definition
+            name: Name of the deployment
+            resource_description: Description of the resource for logging
+        """
+        try:
+            # Try to create the deployment first
+            self.apps_api.create_namespaced_deployment(
+                namespace=self.namespace, body=deployment
+            )
+            logger.info(f"Created {resource_description}: {name}")
+        except ApiException as e:
+            if e.status == 409:  # Conflict - already exists
+                try:
+                    # Delete the existing deployment
+                    self.apps_api.delete_namespaced_deployment(
+                        name=name, namespace=self.namespace
+                    )
+                    logger.info(f"Deleted existing {resource_description}: {name}")
+
+                    # Create new deployment
+                    self.apps_api.create_namespaced_deployment(
+                        namespace=self.namespace, body=deployment
+                    )
+                    logger.info(f"Recreated {resource_description}: {name}")
+                except ApiException as delete_error:
+                    logger.error(
+                        f"Error replacing {resource_description}: {delete_error}"
+                    )
+                    raise
+            else:
+                logger.error(f"Error creating {resource_description}: {e}")
                 raise
