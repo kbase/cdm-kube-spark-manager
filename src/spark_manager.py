@@ -1,7 +1,7 @@
 import logging
 import os
 import uuid
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from kubernetes.client.rest import ApiException
 
