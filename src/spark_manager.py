@@ -424,7 +424,7 @@ class KubeSparkManager:
         )
 
     def _create_or_replace_service(
-        self, service: Dict, name: str, resource_description: str
+        self, service: dict[str, Any], name: str, resource_description: str
     ) -> None:
         """
         Create a Kubernetes service, replacing it if it already exists.
