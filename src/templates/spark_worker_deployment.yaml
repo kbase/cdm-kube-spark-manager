@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${WORKER_NAME}
+  namespace: ${NAMESPACE}
+  labels:
+    app: spark
+    component: worker
+    user: ${USERNAME}
+    cluster-id: ${CLUSTER_ID}
+spec:
+  replicas: ${WORKER_COUNT}
+  selector:
+    matchLabels:
+      app: spark
+      component: worker
+      user: ${USERNAME}
+      cluster-id: ${CLUSTER_ID}
+  template:
+    metadata:
+      labels:
+        app: spark
+        component: worker
+        user: ${USERNAME}
+        cluster-id: ${CLUSTER_ID}
+    spec:
+      containers:
+        - name: spark-worker
+          image: ${IMAGE}
+          imagePullPolicy: ${IMAGE_PULL_POLICY}
+          env:
+            - name: SPARK_MODE
+              value: worker
+            - name: SPARK_MASTER_URL
+              value: spark://${MASTER_NAME}.${NAMESPACE}:${MASTER_PORT}
+            - name: SPARK_WORKER_CORES
+              value: "${WORKER_CORES}"
+            - name: SPARK_WORKER_MEMORY
+              value: ${WORKER_MEMORY}
+            - name: SPARK_WORKER_WEBUI_PORT
+              value: "${WORKER_WEBUI_PORT}"
+            - name: POSTGRES_USER
+              value: ${POSTGRES_USER}
+            - name: POSTGRES_PASSWORD
+              value: ${POSTGRES_PASSWORD}
+            - name: POSTGRES_DB
+              value: ${POSTGRES_DB}
+            - name: POSTGRES_URL
+              value: ${POSTGRES_URL}
+          resources:
+            requests:
+              memory: ${WORKER_MEMORY}
+              cpu: ${WORKER_CORES}
+            limits:
+              memory: ${WORKER_MEMORY}
+              cpu: ${WORKER_CORES} 

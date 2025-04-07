@@ -1,15 +1,21 @@
 import logging
 import os
+import pathlib
 import uuid
 from typing import Any, Dict, List
 
+import yaml
 from kubernetes.client.rest import ApiException
 
 import kubernetes as k8s
+from src.template_utils import render_yaml_template
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Get the path to the templates directory
+TEMPLATES_DIR = pathlib.Path(__file__).parent / "templates"
 
 
 class KubeSparkManager:
@@ -29,6 +35,22 @@ class KubeSparkManager:
         "POSTGRES_DB": "PostgreSQL database name",
         "POSTGRES_URL": "PostgreSQL connection URL",
     }
+
+    # Template files
+    MASTER_DEPLOYMENT_TEMPLATE_FILE = os.environ.get(
+        "MASTER_DEPLOYMENT_TEMPLATE_FILE", "spark_master_deployment.yaml"
+    )
+    WORKER_DEPLOYMENT_TEMPLATE_FILE = os.environ.get(
+        "WORKER_DEPLOYMENT_TEMPLATE_FILE", "spark_worker_deployment.yaml"
+    )
+    MASTER_SERVICE_TEMPLATE_FILE = os.environ.get(
+        "MASTER_SERVICE_TEMPLATE_FILE", "spark_master_service.yaml"
+    )
+
+    # Full paths to template files
+    MASTER_DEPLOYMENT_TEMPLATE = str(TEMPLATES_DIR / MASTER_DEPLOYMENT_TEMPLATE_FILE)
+    WORKER_DEPLOYMENT_TEMPLATE = str(TEMPLATES_DIR / WORKER_DEPLOYMENT_TEMPLATE_FILE)
+    MASTER_SERVICE_TEMPLATE = str(TEMPLATES_DIR / MASTER_SERVICE_TEMPLATE_FILE)
 
     # Default configuration values for cluster settings
     DEFAULT_WORKER_COUNT = 2
@@ -109,24 +131,6 @@ class KubeSparkManager:
             f"Initialized KubeSparkManager for user {username} in namespace {self.namespace}"
         )
 
-    @staticmethod
-    def _prepare_postgres_config() -> List[Dict[str, str]]:
-        """
-        Prepare Postgres environment variables for Hive metastore.
-
-        """
-
-        # Postgres configuration from environment variables
-        postgres_config = {
-            "POSTGRES_USER": os.environ["POSTGRES_USER"],
-            "POSTGRES_PASSWORD": os.environ["POSTGRES_PASSWORD"],
-            "POSTGRES_DB": os.environ["POSTGRES_DB"],
-            "POSTGRES_URL": os.environ["POSTGRES_URL"],
-        }
-
-        # Convert to Kubernetes env var format
-        return [{"name": k, "value": v} for k, v in postgres_config.items()]
-
     def create_cluster(
         self,
         worker_count: int = DEFAULT_WORKER_COUNT,
@@ -148,17 +152,12 @@ class KubeSparkManager:
         Returns:
             The Spark master URL for connecting to the cluster
         """
-        # Create or validate postgres config
-        postgres_env = self._prepare_postgres_config()
-
         # Create the Spark master deployment and service
-        self._create_master_deployment(master_cores, master_memory, postgres_env)
+        self._create_master_deployment(master_cores, master_memory)
         self._create_master_service()
 
         # Create the Spark worker deployment
-        self._create_worker_deployment(
-            worker_count, worker_cores, worker_memory, postgres_env
-        )
+        self._create_worker_deployment(worker_count, worker_cores, worker_memory)
 
         # Return cluster information
         master_url = (
@@ -173,114 +172,44 @@ class KubeSparkManager:
             "status": "creating",
         }
 
-    def _create_master_deployment(
-        self, cores: int, memory: str, postgres_env: List[Dict[str, str]]
-    ):
+    def _create_master_deployment(self, cores: int, memory: str):
         """
         Create the Spark master deployment.
 
         Args:
             cores: Number of CPU cores for the master
             memory: Memory allocation for the master
-            postgres_env: Postgres environment variables
         """
-        # Define Spark master environment variables
-        env = [
-            {"name": "SPARK_MODE", "value": "master"},
-            {"name": "SPARK_MASTER_PORT", "value": str(self.DEFAULT_MASTER_PORT)},
-            {
-                "name": "SPARK_MASTER_WEBUI_PORT",
-                "value": str(self.DEFAULT_MASTER_WEBUI_PORT),
-            },
-            {
-                "name": "MAX_EXECUTORS",
-                "value": str(
-                    os.environ.get("MAX_EXECUTORS", self.DEFAULT_MAX_EXECUTORS)
-                ),
-            },
-            {
-                "name": "MAX_CORES_PER_APPLICATION",
-                "value": str(
-                    os.environ.get(
-                        "MAX_CORES_PER_APPLICATION",
-                        self.DEFAULT_MAX_CORES_PER_APPLICATION,
-                    )
-                ),
-            },
-            {
-                "name": "EXECUTOR_CORES",
-                "value": str(
-                    os.environ.get("EXECUTOR_CORES", self.DEFAULT_EXECUTOR_CORES)
-                ),
-            },
-        ] + postgres_env
-
-        # Create the deployment spec
-        # TODO: We could use a YAML file as template for the deployment spec.
-        deployment = {
-            "apiVersion": "apps/v1",
-            "kind": "Deployment",
-            "metadata": {
-                "name": self.master_name,
-                "namespace": self.namespace,
-                "labels": {
-                    "app": "spark",
-                    "component": "master",
-                    "user": self.username,
-                    "cluster-id": self.cluster_id,
-                },
-            },
-            "spec": {
-                "replicas": 1,
-                "selector": {
-                    "matchLabels": {
-                        "app": "spark",
-                        "component": "master",
-                        "user": self.username,
-                        "cluster-id": self.cluster_id,
-                    }
-                },
-                "template": {
-                    "metadata": {
-                        "labels": {
-                            "app": "spark",
-                            "component": "master",
-                            "user": self.username,
-                            "cluster-id": self.cluster_id,
-                        }
-                    },
-                    "spec": {
-                        "hostname": f"spark-master-{self.username.lower()}",
-                        "containers": [
-                            {
-                                "name": "spark-master",
-                                "image": self.image,
-                                "imagePullPolicy": self.image_pull_policy,
-                                "ports": [
-                                    {
-                                        "containerPort": self.DEFAULT_MASTER_PORT,
-                                        "name": "master-comm",
-                                        "protocol": "TCP",
-                                    },
-                                    {
-                                        "containerPort": self.DEFAULT_MASTER_WEBUI_PORT,
-                                        "name": "master-ui",
-                                        "protocol": "TCP",
-                                    },
-                                ],
-                                "env": env,
-                                "resources": {
-                                    "requests": {"memory": memory, "cpu": str(cores)},
-                                    # TODO: Add resource limits if needed
-                                    # Set limits to same as requests for now
-                                    "limits": {"memory": memory, "cpu": str(cores)},
-                                },
-                            }
-                        ],
-                    },
-                },
-            },
+        template_values = {
+            "MASTER_NAME": self.master_name,
+            "NAMESPACE": self.namespace,
+            "USERNAME": self.username,
+            "USERNAME_LOWER": self.username.lower(),
+            "CLUSTER_ID": self.cluster_id,
+            "IMAGE": self.image,
+            "IMAGE_PULL_POLICY": self.image_pull_policy,
+            "MASTER_PORT": self.DEFAULT_MASTER_PORT,
+            "MASTER_WEBUI_PORT": self.DEFAULT_MASTER_WEBUI_PORT,
+            "MAX_EXECUTORS": os.environ.get(
+                "MAX_EXECUTORS", self.DEFAULT_MAX_EXECUTORS
+            ),
+            "MAX_CORES_PER_APPLICATION": os.environ.get(
+                "MAX_CORES_PER_APPLICATION", self.DEFAULT_MAX_CORES_PER_APPLICATION
+            ),
+            "EXECUTOR_CORES": os.environ.get(
+                "EXECUTOR_CORES", self.DEFAULT_EXECUTOR_CORES
+            ),
+            "MASTER_MEMORY": memory,
+            "MASTER_CORES": cores,
+            "POSTGRES_USER": os.environ["POSTGRES_USER"],
+            "POSTGRES_PASSWORD": os.environ["POSTGRES_PASSWORD"],
+            "POSTGRES_DB": os.environ["POSTGRES_DB"],
+            "POSTGRES_URL": os.environ["POSTGRES_URL"],
         }
+
+        deployment = render_yaml_template(
+            self.MASTER_DEPLOYMENT_TEMPLATE, template_values
+        )
 
         self._create_or_replace_deployment(
             deployment, self.master_name, "Spark master deployment"
@@ -288,40 +217,16 @@ class KubeSparkManager:
 
     def _create_master_service(self):
         """Create a Kubernetes service for the Spark master."""
-        service = {
-            "apiVersion": "v1",
-            "kind": "Service",
-            "metadata": {
-                "name": self.master_name,
-                "namespace": self.namespace,
-                "labels": {
-                    "app": "spark",
-                    "component": "master",
-                    "user": self.username,
-                    "cluster-id": self.cluster_id,
-                },
-            },
-            "spec": {
-                "ports": [
-                    {
-                        "port": self.DEFAULT_MASTER_PORT,
-                        "targetPort": self.DEFAULT_MASTER_PORT,
-                        "name": "spark",
-                    },
-                    {
-                        "port": self.DEFAULT_MASTER_WEBUI_PORT,
-                        "targetPort": self.DEFAULT_MASTER_WEBUI_PORT,
-                        "name": "webui",
-                    },
-                ],
-                "selector": {
-                    "app": "spark",
-                    "component": "master",
-                    "user": self.username,
-                    "cluster-id": self.cluster_id,
-                },
-            },
+        template_values = {
+            "MASTER_NAME": self.master_name,
+            "NAMESPACE": self.namespace,
+            "USERNAME": self.username,
+            "CLUSTER_ID": self.cluster_id,
+            "MASTER_PORT": self.DEFAULT_MASTER_PORT,
+            "MASTER_WEBUI_PORT": self.DEFAULT_MASTER_WEBUI_PORT,
         }
+
+        service = render_yaml_template(self.MASTER_SERVICE_TEMPLATE, template_values)
 
         self._create_or_replace_service(
             service, self.master_name, "Spark master service"
@@ -332,7 +237,6 @@ class KubeSparkManager:
         worker_count: int,
         worker_cores: int,
         worker_memory: str,
-        postgres_env: List[Dict[str, str]],
     ):
         """
         Create the Spark worker deployment.
@@ -341,81 +245,29 @@ class KubeSparkManager:
             worker_count: Number of worker replicas
             worker_cores: CPU cores per worker
             worker_memory: Memory allocation per worker
-            postgres_env: Postgres environment variables
         """
-        # Define Spark worker environment variables
-        env = [
-            {"name": "SPARK_MODE", "value": "worker"},
-            {
-                "name": "SPARK_MASTER_URL",
-                "value": f"spark://{self.master_name}.{self.namespace}:{self.DEFAULT_MASTER_PORT}",
-            },
-            {"name": "SPARK_WORKER_CORES", "value": str(worker_cores)},
-            {"name": "SPARK_WORKER_MEMORY", "value": worker_memory},
-            {
-                "name": "SPARK_WORKER_WEBUI_PORT",
-                "value": str(self.DEFAULT_WORKER_WEBUI_PORT),
-            },
-        ] + postgres_env
-
-        # Create the deployment spec
-        deployment = {
-            "apiVersion": "apps/v1",
-            "kind": "Deployment",
-            "metadata": {
-                "name": self.worker_name,
-                "namespace": self.namespace,
-                "labels": {
-                    "app": "spark",
-                    "component": "worker",
-                    "user": self.username,
-                    "cluster-id": self.cluster_id,
-                },
-            },
-            "spec": {
-                "replicas": worker_count,
-                "selector": {
-                    "matchLabels": {
-                        "app": "spark",
-                        "component": "worker",
-                        "user": self.username,
-                        "cluster-id": self.cluster_id,
-                    }
-                },
-                "template": {
-                    "metadata": {
-                        "labels": {
-                            "app": "spark",
-                            "component": "worker",
-                            "user": self.username,
-                            "cluster-id": self.cluster_id,
-                        }
-                    },
-                    "spec": {
-                        "containers": [
-                            {
-                                "name": "spark-worker",
-                                "image": self.image,
-                                "imagePullPolicy": self.image_pull_policy,
-                                "env": env,
-                                "resources": {
-                                    "requests": {
-                                        "memory": worker_memory,
-                                        "cpu": str(worker_cores),
-                                    },
-                                    # TODO: Add resource limits if needed
-                                    # Set limits to same as requests for now
-                                    "limits": {
-                                        "memory": worker_memory,
-                                        "cpu": str(worker_cores),
-                                    },
-                                },
-                            }
-                        ]
-                    },
-                },
-            },
+        template_values = {
+            "WORKER_NAME": self.worker_name,
+            "NAMESPACE": self.namespace,
+            "USERNAME": self.username,
+            "CLUSTER_ID": self.cluster_id,
+            "IMAGE": self.image,
+            "IMAGE_PULL_POLICY": self.image_pull_policy,
+            "MASTER_NAME": self.master_name,
+            "MASTER_PORT": self.DEFAULT_MASTER_PORT,
+            "WORKER_COUNT": worker_count,
+            "WORKER_CORES": worker_cores,
+            "WORKER_MEMORY": worker_memory,
+            "WORKER_WEBUI_PORT": self.DEFAULT_WORKER_WEBUI_PORT,
+            "POSTGRES_USER": os.environ["POSTGRES_USER"],
+            "POSTGRES_PASSWORD": os.environ["POSTGRES_PASSWORD"],
+            "POSTGRES_DB": os.environ["POSTGRES_DB"],
+            "POSTGRES_URL": os.environ["POSTGRES_URL"],
         }
+
+        deployment = render_yaml_template(
+            self.WORKER_DEPLOYMENT_TEMPLATE, template_values
+        )
 
         self._create_or_replace_deployment(
             deployment,
