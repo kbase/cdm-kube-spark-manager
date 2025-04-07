@@ -63,4 +63,4 @@ spec:
               cpu: ${MASTER_CORES}
             limits:
               memory: ${MASTER_MEMORY}
-              cpu: ${MASTER_CORES} 
+              cpu: ${MASTER_CORES}
