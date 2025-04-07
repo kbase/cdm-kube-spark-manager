@@ -464,7 +464,7 @@ class KubeSparkManager:
                 raise
 
     def _create_or_replace_deployment(
-        self, deployment: Dict, name: str, resource_description: str
+        self, deployment: dict[str, Any], name: str, resource_description: str
     ) -> None:
         """
         Create a Kubernetes deployment, replacing it if it already exists.
