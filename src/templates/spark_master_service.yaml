@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ MASTER_NAME }}
+  namespace: {{ NAMESPACE }}
+  labels:
+    app: spark
+    component: master
+    user: {{ USERNAME }}
+    cluster-id: {{ CLUSTER_ID }}
+spec:
+  ports:
+    - port: {{ MASTER_PORT|int }}
+      targetPort: {{ MASTER_PORT|int }}
+      name: spark
+    - port: {{ MASTER_WEBUI_PORT|int }}
+      targetPort: {{ MASTER_WEBUI_PORT|int }}
+      name: webui
+  selector:
+    app: spark
+    component: master
+    user: {{ USERNAME }}
+    cluster-id: {{ CLUSTER_ID }}
