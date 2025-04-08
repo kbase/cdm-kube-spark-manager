@@ -1,4 +1,4 @@
-from src.template_utils import *
+from src.template_utils import render_yaml_template
 
 
 def test_noop():

@@ -1,66 +1,66 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ${MASTER_NAME}
-  namespace: ${NAMESPACE}
+  name: {{ MASTER_NAME }}
+  namespace: {{ NAMESPACE }}
   labels:
     app: spark
     component: master
-    user: ${USERNAME}
-    cluster-id: ${CLUSTER_ID}
+    user: {{ USERNAME }}
+    cluster-id: {{ CLUSTER_ID }}
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: spark
       component: master
-      user: ${USERNAME}
-      cluster-id: ${CLUSTER_ID}
+      user: {{ USERNAME }}
+      cluster-id: {{ CLUSTER_ID }}
   template:
     metadata:
       labels:
         app: spark
         component: master
-        user: ${USERNAME}
-        cluster-id: ${CLUSTER_ID}
+        user: {{ USERNAME }}
+        cluster-id: {{ CLUSTER_ID }}
     spec:
-      hostname: spark-master-${USERNAME_LOWER}
+      hostname: spark-master-{{ USERNAME_LOWER }}
       containers:
         - name: spark-master
-          image: ${IMAGE}
-          imagePullPolicy: ${IMAGE_PULL_POLICY}
+          image: {{ IMAGE }}
+          imagePullPolicy: {{ IMAGE_PULL_POLICY }}
           ports:
-            - containerPort: ${MASTER_PORT}
+            - containerPort: {{ MASTER_PORT }}
               name: master-comm
               protocol: TCP
-            - containerPort: ${MASTER_WEBUI_PORT}
+            - containerPort: {{ MASTER_WEBUI_PORT }}
               name: master-ui
               protocol: TCP
           env:
             - name: SPARK_MODE
               value: master
             - name: SPARK_MASTER_PORT
-              value: "${MASTER_PORT}"
+              value: "{{ MASTER_PORT }}"
             - name: SPARK_MASTER_WEBUI_PORT
-              value: "${MASTER_WEBUI_PORT}"
+              value: "{{ MASTER_WEBUI_PORT }}"
             - name: MAX_EXECUTORS
-              value: "${MAX_EXECUTORS}"
+              value: "{{ MAX_EXECUTORS }}"
             - name: MAX_CORES_PER_APPLICATION
-              value: "${MAX_CORES_PER_APPLICATION}"
+              value: "{{ MAX_CORES_PER_APPLICATION }}"
             - name: EXECUTOR_CORES
-              value: "${EXECUTOR_CORES}"
+              value: "{{ EXECUTOR_CORES }}"
             - name: POSTGRES_USER
-              value: ${POSTGRES_USER}
+              value: {{ POSTGRES_USER }}
             - name: POSTGRES_PASSWORD
-              value: ${POSTGRES_PASSWORD}
+              value: {{ POSTGRES_PASSWORD }}
             - name: POSTGRES_DB
-              value: ${POSTGRES_DB}
+              value: {{ POSTGRES_DB }}
             - name: POSTGRES_URL
-              value: ${POSTGRES_URL}
+              value: {{ POSTGRES_URL }}
           resources:
             requests:
-              memory: ${MASTER_MEMORY}
-              cpu: ${MASTER_CORES}
+              memory: "{{ MASTER_MEMORY }}"
+              cpu: "{{ MASTER_CORES }}"
             limits:
-              memory: ${MASTER_MEMORY}
-              cpu: ${MASTER_CORES}
+              memory: "{{ MASTER_MEMORY }}"
+              cpu: "{{ MASTER_CORES }}"

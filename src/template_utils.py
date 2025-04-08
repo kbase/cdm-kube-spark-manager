@@ -3,9 +3,10 @@ import re
 from typing import Any, Dict
 
 import yaml
+from jinja2 import Template
 
 
-def load_yaml_template(template_path: str) -> str:
+def _load_yaml_template(template_path: str) -> str:
     """
     Load a YAML template from a file.
 
@@ -19,25 +20,19 @@ def load_yaml_template(template_path: str) -> str:
         return f.read()
 
 
-def render_template(template: str, values: Dict[str, Any]) -> str:
+def _render_template(template: str, values: Dict[str, Any]) -> str:
     """
-    Render a template by replacing placeholders with values.
+    Render a template using Jinja2.
 
     Args:
-        template: Template string with ${PLACEHOLDER} variables
-        values: Dictionary of values to replace placeholders
+        template: Template string with Jinja2 variables
+        values: Dictionary of values for template rendering
 
     Returns:
         Rendered template as a string
     """
-    rendered = template
-
-    # Replace all ${PLACEHOLDER} variables
-    for key, value in values.items():
-        placeholder = f"${{{key}}}"
-        rendered = rendered.replace(placeholder, str(value))
-
-    return rendered
+    jinja_template = Template(template)
+    return jinja_template.render(**values)
 
 
 def render_yaml_template(template_path: str, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -46,11 +41,11 @@ def render_yaml_template(template_path: str, values: Dict[str, Any]) -> Dict[str
 
     Args:
         template_path: Path to the YAML template file
-        values: Dictionary of values to replace placeholders
+        values: Dictionary of values for template rendering
 
     Returns:
         Parsed YAML as a dictionary
     """
-    template = load_yaml_template(template_path)
-    rendered = render_template(template, values)
+    template = _load_yaml_template(template_path)
+    rendered = _render_template(template, values)
     return yaml.safe_load(rendered)
