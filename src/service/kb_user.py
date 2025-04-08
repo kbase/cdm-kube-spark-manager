@@ -7,7 +7,7 @@ from src.service.arg_checkers import check_string as _check_string
 
 class UserID:
     """
-    A users's unique name / identifier.
+    A user's unique name / identifier.
     The ID is expected to be checked against a user registry and so only minimal constraints are
     enforced here.
     :ivar id: the user id.
