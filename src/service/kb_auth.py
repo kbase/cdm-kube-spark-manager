@@ -62,7 +62,7 @@ class KBaseAuth:
     """A client for contacting the KBase authentication server."""
 
     def __init__(self, auth_url: str, full_admin_roles: List[str]):
-        self._url = auth_url
+        self._url = auth_url if auth_url.endswith('/') else auth_url + '/'
         self._me_url = self._url + "api/V2/me"
         self._full_roles = set(full_admin_roles) if full_admin_roles else set()
 
