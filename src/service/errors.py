@@ -33,15 +33,6 @@ class ErrorType(Enum):
     MISSING_ROLE = (10040, "Missing required role")  # noqa: E222 @IgnorePep8
     """ The user is missing a required role. """
 
-    UNAUTHORIZED = (20000, "Unauthorized")  # noqa: E222 @IgnorePep8
-    """ The user is not authorized to perform the requested action. """
-
-    MISSING_PARAMETER = (30000, "Missing input parameter")  # noqa: E222 @IgnorePep8
-    """ A required input parameter was not provided. """
-
-    ILLEGAL_PARAMETER = (30001, "Illegal input parameter")  # noqa: E222 @IgnorePep8
-    """ An input parameter had an illegal value. """
-
     def __init__(self, error_code, error_type):
         self.error_code = error_code
         self.error_type = error_type
@@ -112,30 +103,3 @@ class MissingRoleError(AuthenticationError):
 
     def __init__(self, message: str = None):
         super().__init__(ErrorType.MISSING_ROLE, message)
-
-
-class UnauthorizedError(SparkManagerError):
-    """
-    An error thrown when a user attempts a disallowed action.
-    """
-
-    def __init__(self, message: str = None):
-        super().__init__(ErrorType.UNAUTHORIZED, message)
-
-
-class MissingParameterError(SparkManagerError):
-    """
-    An error thrown when a required parameter is missing.
-    """
-
-    def __init__(self, message: str = None):
-        super().__init__(ErrorType.MISSING_PARAMETER, message)
-
-
-class IllegalParameterError(SparkManagerError):
-    """
-    An error thrown when a provided parameter is illegal.
-    """
-
-    def __init__(self, message: str = None):
-        super().__init__(ErrorType.ILLEGAL_PARAMETER, message)
