@@ -10,7 +10,7 @@ T = TypeVar("T")
 
 def not_falsy(item: T, item_name: str) -> T:
     """
-    Check if a value is falsy and throw and exception if so.
+    Check if a value is falsy and throw an exception if so.
     :param item: the item to check for falsiness.
     :param item_name: the name of the item to include in any exception.
     :raises ValueError: if the item is falsy.
