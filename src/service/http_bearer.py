@@ -39,7 +39,7 @@ class KBaseHTTPBearer(HTTPBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.optional = optional
 
-    async def __call__(self, request: Request) -> kb_auth.KBaseUser:
+    async def __call__(self, request: Request) -> Optional[kb_auth.KBaseUser]:
         authorization: str = request.headers.get("Authorization")
         if not authorization:
             if self.optional:
