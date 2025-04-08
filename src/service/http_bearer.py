@@ -1,10 +1,8 @@
 """
-Alteration of FastAPI's HTTPBearer class to handle the KBase authorization
-step and allow for more informative errors.
+Alteration of FastAPI's HTTPBearer class to handle the KBase authorization steps.
 
-Also adds an `optional` keyword argument that allows for missing, but not malformed,
-authentication headers. If `optional` is `True` and no authorization header is provided, `None`
-will be returned in place of the normal `KBaseUser`.
+Also adds an `optional` keyword argument that allows for missing auth. If true and no
+authorization information is provided, `None` is returned as the user.
 """
 
 from typing import Optional
@@ -12,11 +10,13 @@ from typing import Optional
 from fastapi.openapi.models import HTTPBearer as HTTPBearerModel
 from fastapi.requests import Request
 from fastapi.security.http import HTTPBase
-from fastapi.security.utils import get_authorization_scheme_param
 
-from src.service import app_state, errors, kb_auth
+from src.service import app_state, kb_auth
+from src.service.errors import AuthenticationError
 
 # Modified from https://github.com/tiangolo/fastapi/blob/e13df8ee79d11ad8e338026d99b1dcdcb2261c9f/fastapi/security/http.py#L100
+# Basically the only reason for this class is to get the UI to work with auth.
+# Dependent on the middleware in app.py to set the user in the request state.
 
 _SCHEME = "Bearer"
 
@@ -31,7 +31,7 @@ class KBaseHTTPBearer(HTTPBase):
         # FastAPI uses auto_error, but that allows for malformed headers as well as just
         # no header. Use a different variable name since the behavior is different.
         optional: bool = False,
-        # Considered adding a required auth role here and throwing an exception if the user
+        # Considered adding an admin auth role here and throwing an exception if the user
         # doesn't have it, but often you want to customize the error message.
         # Easier to handle that in the route method.
     ):
@@ -40,28 +40,19 @@ class KBaseHTTPBearer(HTTPBase):
         self.optional = optional
 
     async def __call__(self, request: Request) -> Optional[kb_auth.KBaseUser]:
-        authorization: str = request.headers.get("Authorization")
-        if not authorization:
-            if self.optional:
-                return None
-            raise errors.MissingTokenError("Authorization header required")
-        scheme, credentials = get_authorization_scheme_param(authorization)
-        if not (scheme and credentials):
-            raise errors.InvalidAuthHeaderError(
-                f"Authorization header requires {_SCHEME} scheme followed by token"
-            )
-        if scheme.lower() != _SCHEME.lower():
-            # don't put the received scheme in the error message, might be a token
-            raise errors.InvalidAuthHeaderError(
-                f"Authorization header requires {_SCHEME} scheme"
-            )
-        try:
-            return await app_state.get_app_state(request).auth.get_user(credentials)
-        except kb_auth.InvalidTokenError:
-            raise errors.InvalidTokenError("Invalid authentication token")
-        except Exception as e:
-            # Catch any other errors and convert to authentication error
-            raise errors.AuthenticationError(
-                errors.ErrorType.AUTHENTICATION_FAILED,
-                f"Authentication failed: {str(e)}",
-            )
+        user = app_state.get_request_user(request)
+        auth_error = app_state.get_request_auth_error(request)
+
+        # If there's a stored auth error, raise it
+        if auth_error:
+            raise auth_error
+
+        # Otherwise check if user is present
+        if not user and not self.optional:
+            raise MissingTokenError("Authorization header required")
+
+        return user
+
+
+class MissingTokenError(AuthenticationError):
+    """An error thrown when a token is expected but not provided."""

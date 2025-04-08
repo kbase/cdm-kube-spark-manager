@@ -29,6 +29,10 @@ class ErrorType(Enum):
         "Invalid authentication header",
     )  # noqa: E222 @IgnorePep8
     """ The authentication header is not valid. """
+
+    MISSING_ROLE = (10040, "Missing required role")  # noqa: E222 @IgnorePep8
+    """ The user is missing a required role. """
+
     UNAUTHORIZED = (20000, "Unauthorized")  # noqa: E222 @IgnorePep8
     """ The user is not authorized to perform the requested action. """
 
@@ -99,6 +103,15 @@ class InvalidTokenError(AuthenticationError):
 
     def __init__(self, message: str = None):
         super().__init__(ErrorType.INVALID_TOKEN, message)
+
+
+class MissingRoleError(AuthenticationError):
+    """
+    An error thrown when a user is missing a required role.
+    """
+
+    def __init__(self, message: str = None):
+        super().__init__(ErrorType.MISSING_ROLE, message)
 
 
 class UnauthorizedError(SparkManagerError):

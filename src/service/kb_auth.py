@@ -2,18 +2,19 @@
 A client for the KBase Auth2 server.
 """
 
-# Mostly copied from https://github.com/kbase/collections
+# Mostly copied from https://github.com/kbase/cdm-task-service/blob/main/cdmtaskservice/kb_auth.py
 
 
 import logging
+import time
 from enum import IntEnum
-from typing import List, NamedTuple
+from typing import NamedTuple, Self
 
 import aiohttp
-from tornado import web
+from cacheout.lru import LRUCache
 
 from src.service.arg_checkers import not_falsy as _not_falsy
-from src.service.kb_user import UserID
+from src.service.errors import InvalidTokenError, MissingRoleError
 
 
 class AdminPermission(IntEnum):
@@ -27,12 +28,12 @@ class AdminPermission(IntEnum):
 
 
 class KBaseUser(NamedTuple):
-    user: UserID
+    user: str
     admin_perm: AdminPermission
-    token: str
 
 
 async def _get(url, headers):
+    # TODO PERF keep a single session and add a close method
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as r:
             await _check_error(r)
@@ -47,7 +48,7 @@ async def _check_error(r):
             err = "Non-JSON response from KBase auth server, status code: " + str(
                 r.status
             )
-            logging.getLogger(__name__).info("%s, response:\n%s", err, await r.text())
+            logging.getLogger(__name__).info("%s, response:\n%s", err, r.text)
             raise IOError(err)
         # assume that if we get json then at least this is the auth server and we can
         # rely on the error structure.
@@ -61,59 +62,91 @@ async def _check_error(r):
 class KBaseAuth:
     """A client for contacting the KBase authentication server."""
 
-    def __init__(self, auth_url: str, full_admin_roles: List[str]):
-        self._url = auth_url if auth_url.endswith('/') else auth_url + '/'
+    @classmethod
+    async def create(
+        cls,
+        auth_url: str,
+        required_roles: list[str] = None,
+        full_admin_roles: list[str] = None,
+        cache_max_size: int = 10000,
+        cache_expiration: int = 300,
+    ) -> Self:
+        """
+        Create the client.
+        auth_url - The root url of the authentication service.
+        required_roles - The KBase Auth2 roles that the user must possess in order to be allowed
+            to use the service.
+        full_admin_roles -  The KBase Auth2 roles that determine that user is an administrator.
+        cache_max_size -  the maximum size of the token cache.
+        cache_expiration -  the expiration time for the token cache in
+            seconds.
+        """
+        if not _not_falsy(auth_url, "auth_url").endswith("/"):
+            auth_url += "/"
+        j = await _get(auth_url, {"Accept": "application/json"})
+        return KBaseAuth(
+            auth_url,
+            required_roles,
+            full_admin_roles,
+            cache_max_size,
+            cache_expiration,
+            j.get("servicename"),
+        )
+
+    def __init__(
+        self,
+        auth_url: str,
+        required_roles: list[str],
+        full_admin_roles: list[str],
+        cache_max_size: int,
+        cache_expiration: int,
+        service_name: str,
+    ):
+        self._url = auth_url
         self._me_url = self._url + "api/V2/me"
+        self._req_roles = set(required_roles) if required_roles else None
         self._full_roles = set(full_admin_roles) if full_admin_roles else set()
+        self._cache_timer = (
+            time.time
+        )  # TODO TEST figure out how to replace the timer to test
+        self._cache = LRUCache(
+            timer=self._cache_timer, maxsize=cache_max_size, ttl=cache_expiration
+        )
+
+        if service_name != "Authentication Service":
+            raise IOError(
+                f"The service at {self._url} does not appear to be the KBase "
+                + "Authentication Service"
+            )
+
+        # could use the server time to adjust for clock skew, probably not worth the trouble
 
     async def get_user(self, token: str) -> KBaseUser:
         """
         Get a username from a token as well as the user's administration status.
-        :param token: The user's token.
-        :returns: the user.
+        Verifies the user has all the required roles set in the create() method.
+
+        token - The user's token.
+
+        Returns the user.
         """
         # TODO CODE should check the token for \n etc.
         _not_falsy(token, "token")
 
+        admin_cache = self._cache.get(token, default=False)
+        if admin_cache:
+            return KBaseUser(admin_cache[0], admin_cache[1])
         j = await _get(self._me_url, {"Authorization": token})
-        v = (self._get_role(j["customroles"]), UserID(j["user"]))
-        return KBaseUser(v[1], v[0], token)
+        croles = set(j["customroles"])
+        if self._req_roles and not self._req_roles <= croles:
+            raise MissingRoleError(
+                "The user is missing a required authentication role to use the service."
+            )
+        v = (j["user"], self._get_admin_role(croles))
+        self._cache.set(token, v)
+        return KBaseUser(v[0], v[1])
 
-    def _get_role(self, roles):
-        r = set(roles)
-        if r & self._full_roles:
+    def _get_admin_role(self, roles: set[str]):
+        if roles & self._full_roles:
             return AdminPermission.FULL
         return AdminPermission.NONE
-
-
-class AuthenticationError(web.HTTPError):
-    """An error thrown from the authentication service."""
-
-    def __init__(self, status_code=400, log_message=None, *args, **kwargs):
-        super().__init__(
-            status_code, log_message or "Authentication error", *args, **kwargs
-        )
-
-
-class InvalidTokenError(AuthenticationError):
-    """An error thrown when a token is invalid."""
-
-    def __init__(self, log_message=None, *args, **kwargs):
-        super().__init__(
-            status_code=401,
-            log_message=log_message or "Invalid session token format",
-            *args,
-            **kwargs
-        )
-
-
-class MissingTokenError(AuthenticationError):
-    """An error thrown when a token is missing."""
-
-    def __init__(self, log_message=None, *args, **kwargs):
-        super().__init__(
-            status_code=401,
-            log_message=log_message or "Missing session token",
-            *args,
-            **kwargs
-        )
