@@ -28,8 +28,7 @@ class ErrorType(Enum):
         10030,
         "Invalid authentication header",
     )  # noqa: E222 @IgnorePep8
-    """ The authentication header  is not valid. """
-
+    """ The authentication header is not valid. """
     UNAUTHORIZED = (20000, "Unauthorized")  # noqa: E222 @IgnorePep8
     """ The user is not authorized to perform the requested action. """
 
