@@ -27,7 +27,7 @@ def contains_control_characters(string: str, allow_tab_newline=False) -> int:
     starting with a C.
     :param string: the string to check.
     :param allow_tab_newline: True to allow tab (\t) and newline (\n) control characters.
-    :returns: True if the string contains control characters, False otherwise.
+    :returns: index of first control character, or -1 if no control characters are found.
     """
     # make public if needed
     # See https://stackoverflow.com/questions/4324790/removing-control-characters-from-a-string-in-python  # noqa: E501
