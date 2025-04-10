@@ -27,7 +27,6 @@ class RequestState(NamedTuple):
     """Holds request specific state."""
 
     user: Optional[KBaseUser]
-    auth_error: Optional[Exception] = None
 
 
 async def build_app(app: FastAPI) -> None:
@@ -100,18 +99,15 @@ def _get_app_state_from_app(app: FastAPI) -> AppState:
     return app.state._spark_state
 
 
-def set_request_user(
-    request: Request, user: Optional[KBaseUser], auth_error: Optional[Exception] = None
-) -> None:
+def set_request_user(request: Request, user: Optional[KBaseUser]) -> None:
     """
     Set the user for the current request.
 
     Args:
         request: The FastAPI request.
         user: The KBase user.
-        auth_error: Optional authentication error that occurred.
     """
-    request.state._request_state = RequestState(user=user, auth_error=auth_error)
+    request.state._request_state = RequestState(user=user)
 
 
 def get_request_user(request: Request) -> Optional[KBaseUser]:
@@ -127,18 +123,3 @@ def get_request_user(request: Request) -> Optional[KBaseUser]:
     if not hasattr(request.state, "_request_state") or not request.state._request_state:
         return None
     return request.state._request_state.user
-
-
-def get_request_auth_error(request: Request) -> Optional[Exception]:
-    """
-    Get any authentication error that occurred for a request.
-
-    Args:
-        request: The FastAPI request.
-
-    Returns:
-        The authentication error if available, otherwise None.
-    """
-    if not hasattr(request.state, "_request_state") or not request.state._request_state:
-        return None
-    return request.state._request_state.auth_error

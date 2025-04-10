@@ -41,14 +41,6 @@ class KBaseHTTPBearer(HTTPBase):
 
     async def __call__(self, request: Request) -> Optional[kb_auth.KBaseUser]:
         user = app_state.get_request_user(request)
-        auth_error = app_state.get_request_auth_error(request)
-
-        # If there's a stored auth error, raise it
-        if auth_error:
-            raise auth_error
-
-        # Otherwise check if user is present
         if not user and not self.optional:
             raise MissingTokenError("Authorization header required")
-
         return user

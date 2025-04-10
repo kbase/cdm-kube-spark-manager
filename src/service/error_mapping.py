@@ -4,7 +4,7 @@ Map errors from exception type to custom error type and HTTP status.
 
 # Copied from https://github.com/kbase/cdm-task-service/blob/main/cdmtaskservice/error_mapping.py
 
-from typing import NamedTuple, Optional, Tuple
+from typing import NamedTuple, Optional
 
 from fastapi import status
 
@@ -40,7 +40,7 @@ _ERR_MAP = {
 }
 
 
-def map_error(err: Exception) -> Tuple[Optional[ErrorType], int]:
+def map_error(err: Exception) -> ErrorMapping:
     """
     Map an error to an optional error type and a HTTP code.
     """
@@ -55,4 +55,4 @@ def map_error(err: Exception) -> Tuple[Optional[ErrorType], int]:
     if not mapping:
         mapping = ErrorMapping(None, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    return mapping.err_type, mapping.http_code
+    return mapping
