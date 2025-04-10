@@ -1,7 +1,7 @@
 # mostly copied from https://github.com/kbase/cdm-task-service/blob/main/cdmtaskservice/arg_checkers.py
 
 import unicodedata
-from typing import Any
+from typing import Any, Optional
 
 
 def not_falsy(obj: Any, name: str):
@@ -18,7 +18,7 @@ def not_falsy(obj: Any, name: str):
     return obj
 
 
-def contains_control_characters(string: str, allowed_chars: list[str] = None) -> int:
+def contains_control_characters(string: str, allowed_chars: Optional[list[str]] = None) -> int:
     """
     Check if a string contains control characters, as denoted by the Unicode character category
     starting with a C.

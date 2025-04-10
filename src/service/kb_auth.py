@@ -14,7 +14,7 @@ import aiohttp
 from cacheout.lru import LRUCache
 
 from src.service.arg_checkers import not_falsy as _not_falsy
-from src.service.errors import InvalidTokenError, MissingRoleError
+from src.service.exceptions import InvalidTokenError, MissingRoleError
 
 
 class AdminPermission(IntEnum):
