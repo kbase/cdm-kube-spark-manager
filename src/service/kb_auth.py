@@ -66,8 +66,8 @@ class KBaseAuth:
     async def create(
         cls,
         auth_url: str,
-        required_roles: list[str] = None,
-        full_admin_roles: list[str] = None,
+        required_roles: list[str] | None = None,
+        full_admin_roles: list[str] | None = None,
         cache_max_size: int = 10000,
         cache_expiration: int = 300,
     ) -> Self:
@@ -84,7 +84,7 @@ class KBaseAuth:
         if not _not_falsy(auth_url, "auth_url").endswith("/"):
             auth_url += "/"
         j = await _get(auth_url, {"Accept": "application/json"})
-        return KBaseAuth(
+        return cls(
             auth_url,
             required_roles,
             full_admin_roles,
@@ -96,8 +96,8 @@ class KBaseAuth:
     def __init__(
         self,
         auth_url: str,
-        required_roles: list[str],
-        full_admin_roles: list[str],
+        required_roles: list[str] | None,
+        full_admin_roles: list[str] | None,
         cache_max_size: int,
         cache_expiration: int,
         service_name: str,

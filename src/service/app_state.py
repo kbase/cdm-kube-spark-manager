@@ -99,7 +99,7 @@ def _get_app_state_from_app(app: FastAPI) -> AppState:
     return app.state._spark_state
 
 
-def set_request_user(request: Request, user: Optional[KBaseUser]) -> None:
+def set_request_user(request: Request, user: KBaseUser | None) -> None:
     """
     Set the user for the current request.
 
@@ -110,7 +110,7 @@ def set_request_user(request: Request, user: Optional[KBaseUser]) -> None:
     request.state._request_state = RequestState(user=user)
 
 
-def get_request_user(request: Request) -> Optional[KBaseUser]:
+def get_request_user(request: Request) -> KBaseUser | None:
     """
     Get the user for a request.
 

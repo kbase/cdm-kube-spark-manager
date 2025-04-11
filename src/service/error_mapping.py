@@ -40,17 +40,12 @@ _ERR_MAP = {
 }
 
 
-def map_error(err: Exception) -> ErrorMapping:
+def map_error(err: MissingTokenError | InvalidAuthHeaderError | InvalidTokenError | MissingRoleError) -> ErrorMapping:
     """
     Map an error to an optional error type and a HTTP code.
     """
     # May need to add code to go up the error hierarchy if multiple errors have the same type
-    error_type = type(err)
-    mapping = None
-
-    # Safely lookup the error type
-    if error_type in _ERR_MAP:
-        mapping = _ERR_MAP[error_type]
+    mapping = _ERR_MAP.get(type(err))
 
     if not mapping:
         mapping = ErrorMapping(None, status.HTTP_500_INTERNAL_SERVER_ERROR)
