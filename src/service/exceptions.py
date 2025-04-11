@@ -9,6 +9,12 @@ class SparkManagerError(Exception):
     """
 
 
+class ConfigurationLimitExceededError(SparkManagerError):
+    """
+    An error thrown when cluster configuration exceeds allowed limits.
+    """
+
+
 class AuthenticationError(SparkManagerError):
     """
     Super class for authentication related errors.
