@@ -39,7 +39,6 @@ async def universal_error_handler(request: Request, exc: Exception):
     # Default values
     error_code = 0
     error_type_str = "Unknown error"
-    message = None
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
     if isinstance(exc, SparkManagerError):
