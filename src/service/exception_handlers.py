@@ -50,7 +50,7 @@ async def universal_error_handler(request: Request, exc: Exception):
             error_code = error_type.error_code
             error_type_str = error_type.error_type
         else:
-            error_type_str = type(exc).__name__
+            raise ValueError("this should be impossible")
 
         # Get the exception message, falling back to the error type string
         message = str(exc) if str(exc) else error_type_str
