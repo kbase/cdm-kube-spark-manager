@@ -9,7 +9,7 @@ from functools import lru_cache
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
-APP_VERSION = "0.0.1"
+APP_VERSION = "0.1.0"
 
 
 class Settings(BaseSettings):
@@ -40,7 +40,7 @@ def get_settings() -> Settings:
 def configure_logging():
     """Configure logging for the application."""
     settings = get_settings()
-    if settings.log_level.upper() not in logging._nameToLevel:
+    if settings.log_level.upper() not in logging.getLevelNamesMapping():
         logging.warning(
             "Unrecognized log level '%s'. Falling back to 'INFO'.",
             settings.log_level,
