@@ -6,17 +6,14 @@ import logging
 import os
 from functools import lru_cache
 
-from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic import BaseModel, Field
 
 APP_VERSION = "0.1.0"
 
 
-class Settings(BaseSettings):
+class Settings(BaseModel):
     """
     Application settings.
-
-    Values will be loaded from environment variables or use the provided defaults.
     """
 
     app_name: str = "CDM Spark Cluster Manager API"
