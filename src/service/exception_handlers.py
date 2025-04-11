@@ -58,7 +58,6 @@ async def universal_error_handler(request: Request, exc: Exception):
     elif isinstance(exc, HTTPException):
         # handle FastAPI Exceptions
         status_code = exc.status_code
-        error_type_str = f"HTTP {status_code}"
         message = str(exc.detail)
     else:
         # handle all other generic exceptions
