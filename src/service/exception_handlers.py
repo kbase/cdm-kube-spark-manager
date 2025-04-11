@@ -63,7 +63,6 @@ async def universal_error_handler(request: Request, exc: Exception):
     else:
         # handle all other generic exceptions
         logger.error("Unhandled exception: %s", exc, exc_info=True)
-        error_type_str = "Internal server error"
         message = "An unexpected error occurred"
 
     return _format_error(status_code, error_code, error_type_str, message)
