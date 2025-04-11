@@ -41,7 +41,7 @@ _ERR_MAP = {
     InvalidTokenError: ErrorMapping(ErrorType.INVALID_TOKEN, _H401),
     MissingRoleError: ErrorMapping(ErrorType.MISSING_ROLE, _H403),
     AuthenticationError: ErrorMapping(ErrorType.AUTHENTICATION_FAILED, _H401),
-    ConfigurationLimitExceededError: ErrorMapping(ErrorType.CONFIGURATION_LIMIT_EXCEEDED, _H403),
+    ConfigurationLimitExceededError: ErrorMapping(ErrorType.CONFIGURATION_LIMIT_EXCEEDED, _H400),
     SparkManagerError: ErrorMapping(None, status.HTTP_500_INTERNAL_SERVER_ERROR),
 }
 
