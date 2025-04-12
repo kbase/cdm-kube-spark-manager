@@ -26,7 +26,7 @@ def _format_error(
     error_response = ErrorResponse(
         error=error_code,
         error_type=error_type_str,
-        message=message or error_type_str or "Unknown error",
+        message=message,
     )
     return JSONResponse(
         status_code=status_code,
