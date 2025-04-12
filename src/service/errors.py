@@ -32,6 +32,9 @@ class ErrorType(Enum):
     CONFIGURATION_LIMIT_EXCEEDED = (10050, "Configuration limit exceeded")
     """ The cluster configuration exceeds allowed limits. """
 
+    REQUEST_VALIDATION_FAILED = (30010, "Request validation failed")
+    """ A request to a service failed validation of the request. """
+
     def __init__(self, error_code, error_type):
         self.error_code = error_code
         self.error_type = error_type
