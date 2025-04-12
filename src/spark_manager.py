@@ -2,13 +2,14 @@ import logging
 import os
 import pathlib
 import uuid
-from typing import Any, Dict, List
+from typing import Any, Dict
 
-import yaml
 from kubernetes.client.rest import ApiException
 
 import kubernetes as k8s
 from src.template_utils import render_yaml_template
+
+from src.service.models import SparkClusterCreateResponse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -138,7 +139,7 @@ class KubeSparkManager:
         worker_memory: str = DEFAULT_WORKER_MEMORY,
         master_cores: int = DEFAULT_MASTER_CORES,
         master_memory: str = DEFAULT_MASTER_MEMORY,
-    ) -> dict:
+    ) -> SparkClusterCreateResponse:
         """
         Create a new Spark cluster for the user.
 
@@ -165,12 +166,11 @@ class KubeSparkManager:
         )
         master_ui_url = f"http://{self.master_name}.{self.namespace}:{self.DEFAULT_MASTER_WEBUI_PORT}"
 
-        return {
-            "cluster_id": self.cluster_id,
-            "master_url": master_url,
-            "master_ui_url": master_ui_url,
-            "status": "creating",
-        }
+        return SparkClusterCreateResponse(
+            cluster_id=self.cluster_id,
+            master_url=master_url,
+            master_ui_url=master_ui_url,
+        )
 
     def _create_master_deployment(self, cores: int, memory: str):
         """

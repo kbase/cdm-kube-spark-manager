@@ -8,7 +8,7 @@ calling the build_app() method.
 import asyncio
 import logging
 import os
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 from fastapi import FastAPI, Request
 
@@ -26,7 +26,7 @@ class AppState(NamedTuple):
 class RequestState(NamedTuple):
     """Holds request specific state."""
 
-    user: Optional[KBaseUser]
+    user: KBaseUser | None
 
 
 async def build_app(app: FastAPI) -> None:
