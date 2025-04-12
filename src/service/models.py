@@ -43,9 +43,3 @@ class ErrorResponse(BaseModel):
     error: int | None = Field(None, description="Error code")
     error_type: str | None = Field(None, description="Error type")
     message: str | None = Field(None, description="Error message")
-
-
-class HealthResponse(BaseModel):
-    """Health check response model."""
-
-    status: str = Field(..., description="Health status")
