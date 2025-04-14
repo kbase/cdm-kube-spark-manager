@@ -63,8 +63,3 @@ class ErrorResponse(BaseModel):
     error_type: Annotated[str | None, Field(description="Error type")] = None
     message: Annotated[str | None, Field(description="Error message")] = None
 
-
-class HealthResponse(BaseModel):
-    """Health check response model."""
-
-    status: str = Field(..., description="Health status")
