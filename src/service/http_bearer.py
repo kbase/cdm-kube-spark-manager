@@ -5,7 +5,7 @@ Also adds an `optional` keyword argument that allows for missing auth. If true a
 authorization information is provided, `None` is returned as the user.
 """
 
-from typing import Optional
+
 
 from fastapi.openapi.models import HTTPBearer as HTTPBearerModel
 from fastapi.requests import Request
@@ -25,9 +25,9 @@ class KBaseHTTPBearer(HTTPBase):
     def __init__(
         self,
         *,
-        bearerFormat: Optional[str] = None,
-        scheme_name: Optional[str] = None,
-        description: Optional[str] = None,
+        bearerFormat: str | None = None,
+        scheme_name: str | None = None,
+        description: str | None = None,
         # FastAPI uses auto_error, but that allows for malformed headers as well as just
         # no header. Use a different variable name since the behavior is different.
         optional: bool = False,
@@ -39,7 +39,7 @@ class KBaseHTTPBearer(HTTPBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.optional = optional
 
-    async def __call__(self, request: Request) -> Optional[kb_auth.KBaseUser]:
+    async def __call__(self, request: Request) -> kb_auth.KBaseUser | None:
         user = app_state.get_request_user(request)
         if not user and not self.optional:
             raise MissingTokenError("Authorization header required")

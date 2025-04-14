@@ -1,5 +1,3 @@
-import os
-import re
 from typing import Any, Dict
 
 import yaml

@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from src.service import errors
 from src.service.error_mapping import map_error
 from src.service.exceptions import SparkManagerError
+from src.service.models import ErrorResponse
 
 logger = logging.getLogger(__name__)
 
@@ -22,13 +23,14 @@ def _format_error(
     message: str | None,
 ):
     """Format error response with consistent structure."""
+    error_response = ErrorResponse(
+        error=error_code,
+        error_type=error_type_str,
+        message=message or error_type_str or "Unknown error",
+    )
     return JSONResponse(
         status_code=status_code,
-        content={
-            "error": error_code,
-            "error_type": error_type_str,
-            "message": message or error_type_str or "Unknown error",
-        },
+        content=error_response.model_dump(),
     )
 
 
