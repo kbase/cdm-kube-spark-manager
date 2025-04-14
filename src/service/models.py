@@ -2,48 +2,82 @@
 Pydantic models for the Spark Manager API.
 """
 
-import re
 from typing import Annotated
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ByteSize, Field
 
-
-MIN_MEMORY = 1  # GB
-MAX_MEMORY = 256  # GB
+GiB = 1024 * 1024 * 1024
+MIN_MEMORY_BYTES = int(0.1 * GiB)  # 100MB
+MAX_MEMORY_BYTES = 256 * GiB  # 256GB
 
 MAX_WORKER_COUNT = 25
 MAX_WORKER_CORES = 64
 MAX_MASTER_CORES = 64
 
-DEFAULT_WORKER_MEMORY = "10G"
-DEFAULT_MASTER_MEMORY = "10G"
+DEFAULT_WORKER_COUNT = 2
+DEFAULT_WORKER_CORES = 10
+DEFAULT_WORKER_MEMORY = "10GiB"
+DEFAULT_MASTER_CORES = 10
+DEFAULT_MASTER_MEMORY = "10GiB"
 
 
 class SparkClusterConfig(BaseModel):
     """Configuration for creating a new Spark cluster."""
 
-    worker_count: Annotated[int, Field(description="Number of worker nodes", ge=1, le=MAX_WORKER_COUNT)] = 2
-    worker_cores: Annotated[int, Field(description="CPU cores per worker", ge=1, le=MAX_WORKER_CORES)] = 10
-    worker_memory: Annotated[str, Field(description="Memory per worker (format: {int}G)")] = DEFAULT_WORKER_MEMORY
-    master_cores: Annotated[int, Field(description="CPU cores for master node", ge=1, le=MAX_MASTER_CORES)] = 10
-    master_memory: Annotated[str, Field(description="Memory for master node (format: {int}G)")] = DEFAULT_MASTER_MEMORY
+    worker_count: Annotated[
+        int,
+        Field(
+            description=f"Number of worker nodes in the Spark cluster (Range: 1 to {MAX_WORKER_COUNT}).",
+            ge=1,
+            le=MAX_WORKER_COUNT,
+            examples=[DEFAULT_WORKER_COUNT, 10],
+            default=DEFAULT_WORKER_COUNT,
+        ),
+    ] = DEFAULT_WORKER_COUNT
 
-    @field_validator("worker_memory", "master_memory")
-    @classmethod
-    def validate_memory_format(cls, v: str) -> str:
-        """Validate that memory values follow the format '{int}G' and are within limits."""
-        if not re.match(r"^\d+G$", v):
-            raise ValueError(f"Memory must be in format '{{int}}G', got '{v}'")
-        
-        # Extract the numeric value
-        memory_value = int(v[:-1])
-        
-        if memory_value < MIN_MEMORY:
-            raise ValueError(f"Memory must be at least {MIN_MEMORY}G")
-        if memory_value > MAX_MEMORY:
-            raise ValueError(f"Memory cannot exceed {MAX_MEMORY}G")
+    worker_cores: Annotated[
+        int,
+        Field(
+            description=f"Number of CPU cores allocated to each worker node (Range: 1 to {MAX_WORKER_CORES}).",
+            ge=1,
+            le=MAX_WORKER_CORES,
+            examples=[DEFAULT_WORKER_CORES, 16],
+            default=DEFAULT_WORKER_CORES,
+        ),
+    ] = DEFAULT_WORKER_CORES
 
-        return v
+    worker_memory: Annotated[
+        ByteSize,
+        Field(
+            description=f"Memory allocated per worker node (Range: {MIN_MEMORY_BYTES / (1024*1024):.1f} MiB to {MAX_MEMORY_BYTES / GiB:.0f} GiB). Accepts formats like '10GiB', '10240MiB'.",
+            ge=MIN_MEMORY_BYTES,
+            le=MAX_MEMORY_BYTES,
+            examples=[DEFAULT_WORKER_MEMORY, "32GiB"],
+            default=DEFAULT_WORKER_MEMORY,
+        ),
+    ] = DEFAULT_WORKER_MEMORY  # type: ignore[assignment] - Pydantic handles the string -> ByteSize conversion during validation/initialization.
+
+    master_cores: Annotated[
+        int,
+        Field(
+            description=f"Number of CPU cores allocated to the master node (Range: 1 to {MAX_MASTER_CORES}).",
+            ge=1,
+            le=MAX_MASTER_CORES,
+            examples=[DEFAULT_MASTER_CORES, 8],
+            default=DEFAULT_MASTER_CORES,
+        ),
+    ] = DEFAULT_MASTER_CORES
+
+    master_memory: Annotated[
+        ByteSize,
+        Field(
+            description=f"Memory allocated for the master node (Range: {MIN_MEMORY_BYTES / (1024*1024):.1f} MiB to {MAX_MEMORY_BYTES / GiB:.0f} GiB). Accepts formats like '10GiB', '10240MiB'.",
+            ge=MIN_MEMORY_BYTES,
+            le=MAX_MEMORY_BYTES,
+            examples=[DEFAULT_MASTER_MEMORY, "16GiB"],
+            default=DEFAULT_MASTER_MEMORY,
+        ),
+    ] = DEFAULT_MASTER_MEMORY  # type: ignore[assignment] - Pydantic handles the string -> ByteSize conversion during validation/initialization.
 
 
 class SparkClusterCreateResponse(BaseModel):
@@ -62,4 +96,3 @@ class ErrorResponse(BaseModel):
     error: Annotated[int | None, Field(description="Error code")] = None
     error_type: Annotated[str | None, Field(description="Error type")] = None
     message: Annotated[str | None, Field(description="Error message")] = None
-
