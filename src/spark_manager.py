@@ -428,6 +428,12 @@ class KubeSparkManager:
             )
 
         except Exception as e:
+            logger.error(
+                "Error while fetching deployment status for '%s' in namespace '%s': %s",
+                deployment_name,
+                self.namespace,
+                str(e),
+            )
             status.error = str(e)
 
         return status
