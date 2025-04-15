@@ -96,7 +96,7 @@ async def create_cluster(
 async def get_cluster_status(
     user: kb_auth.KBaseUser = Depends(auth),
 ) -> SparkClusterStatus:
-    """Get the status of Spark cluster belongs to the authenticated user."""
+    """Get the status of the Spark cluster belonging to the authenticated user."""
 
     manager = KubeSparkManager(
         username=str(user.user),
