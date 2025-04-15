@@ -25,4 +25,10 @@ jobs:
         
     - name: Run tests
       run: |
-        pytest -v 
+        PYTHONPATH=src pytest -v --cov=src --cov-report=xml tests
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: true
