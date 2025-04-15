@@ -7,9 +7,12 @@ from typing import Any, Dict
 from kubernetes.client.rest import ApiException
 
 import kubernetes as k8s
+from src.service.models import (
+    DeploymentStatus,
+    SparkClusterCreateResponse,
+    SparkClusterStatus,
+)
 from src.template_utils import render_yaml_template
-
-from src.service.models import SparkClusterCreateResponse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -354,3 +357,77 @@ class KubeSparkManager:
             else:
                 logger.error(f"Error creating {resource_description}: {e}")
                 raise
+
+    def get_cluster_status(self) -> SparkClusterStatus:
+        """
+        Get the status of the Spark cluster for the authenticated user.
+
+        Returns:
+            SparkClusterStatus: The current status of the Spark cluster
+        """
+        master_status = self._get_deployment_status(self.master_name)
+        worker_status = self._get_deployment_status(self.worker_name)
+
+        master_url = None
+        master_ui_url = None
+
+        # Add the master URL if the master has ready replicas
+        if master_status.ready_replicas > 0:
+            master_url = f"spark://{self.master_name}.{self.namespace}:{self.DEFAULT_MASTER_PORT}"
+            master_ui_url = f"http://{self.master_name}.{self.namespace}:{self.DEFAULT_MASTER_WEBUI_PORT}"
+
+        status = SparkClusterStatus(
+            master=master_status,
+            workers=worker_status,
+            master_url=master_url,
+            master_ui_url=master_ui_url,
+        )
+
+        return status
+
+    def _get_deployment_status(self, deployment_name: str) -> DeploymentStatus:
+        """
+        Get the current status of a deployment.
+        """
+
+        status = DeploymentStatus(
+            available_replicas=0,
+            ready_replicas=0,
+            replicas=0,
+            unavailable_replicas=0,
+            is_ready=False,
+            exists=False,
+            error=None,
+        )
+
+        try:
+            deployment = self.apps_api.read_namespaced_deployment(
+                name=deployment_name, namespace=self.namespace
+            )
+
+            # Set exists flag since we found the deployment
+            status.exists = True
+
+            status_obj = getattr(deployment, "status", None)
+
+            if status_obj is None:
+                status.error = "Deployment status is None"
+                return status
+
+            # Update status with actual values
+            status.available_replicas = (
+                getattr(status_obj, "available_replicas", 0) or 0
+            )
+            status.ready_replicas = getattr(status_obj, "ready_replicas", 0) or 0
+            status.replicas = getattr(status_obj, "replicas", 0) or 0
+            status.unavailable_replicas = (
+                getattr(status_obj, "unavailable_replicas", 0) or 0
+            )
+            status.is_ready = (
+                status.ready_replicas == status.replicas and status.replicas > 0
+            )
+
+        except Exception as e:
+            status.error = str(e)
+
+        return status

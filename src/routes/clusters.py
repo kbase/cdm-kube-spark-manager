@@ -12,10 +12,9 @@ from src.service.dependencies import auth
 from src.service.exceptions import ConfigurationLimitExceededError
 from src.service.kb_auth import AdminPermission
 from src.service.models import (
-    DEFAULT_MASTER_MEMORY,
-    DEFAULT_WORKER_MEMORY,
     SparkClusterConfig,
     SparkClusterCreateResponse,
+    SparkClusterStatus,
 )
 from src.spark_manager import KubeSparkManager
 
@@ -43,10 +42,7 @@ async def create_cluster(
 
     # Validate config against defaults for non-admin users
     if user.admin_perm != AdminPermission.FULL:
-        default_config = SparkClusterConfig(
-            worker_memory=DEFAULT_WORKER_MEMORY,  # type: ignore[assignment]
-            master_memory=DEFAULT_MASTER_MEMORY,  # type: ignore[assignment]
-        )
+        default_config = SparkClusterConfig()
 
         exceeds_limits = (
             config.worker_count > default_config.worker_count
@@ -84,3 +80,23 @@ async def create_cluster(
     )
 
     return result
+
+
+@router.get(
+    "",
+    response_model=SparkClusterStatus,
+    summary="Get cluster status",
+    description="Retrieves the status of the Spark cluster for the authenticated user.",
+)
+async def get_cluster_status(
+    user: kb_auth.KBaseUser = Depends(auth),
+) -> SparkClusterStatus:
+    """Get the status of Spark cluster belongs to the authenticated user."""
+
+    manager = KubeSparkManager(
+        username=str(user.user),
+    )
+
+    status = manager.get_cluster_status()
+
+    return status
