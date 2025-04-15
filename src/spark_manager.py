@@ -391,13 +391,7 @@ class KubeSparkManager:
         """
 
         status = DeploymentStatus(
-            available_replicas=0,
-            ready_replicas=0,
-            replicas=0,
-            unavailable_replicas=0,
-            is_ready=False,
             exists=False,
-            error=None,
         )
 
         try:
