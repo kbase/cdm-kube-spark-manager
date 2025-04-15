@@ -102,3 +102,35 @@ class HealthResponse(BaseModel):
     """Health check response model."""
 
     status: Annotated[str, Field(description="Health status")]
+
+
+class DeploymentStatus(BaseModel):
+    """Status information of a Kubernetes deployment."""
+
+    available_replicas: Annotated[
+        int, Field(description="Number of available replicas")
+    ] = 0
+    ready_replicas: Annotated[int, Field(description="Number of ready replicas")] = 0
+    replicas: Annotated[int, Field(description="Total number of desired replicas")] = 0
+    unavailable_replicas: Annotated[
+        int, Field(description="Number of unavailable replicas")
+    ] = 0
+    is_ready: Annotated[bool, Field(description="Whether all replicas are ready")] = (
+        False
+    )
+    exists: Annotated[bool, Field(description="Whether the deployment exists")] = True
+    error: Annotated[str | None, Field(description="Error message if any")] = None
+
+
+class SparkClusterStatus(BaseModel):
+    """Status information about a Spark cluster."""
+
+    master: Annotated[DeploymentStatus, Field(description="Master node status")]
+    workers: Annotated[DeploymentStatus, Field(description="Worker nodes status")]
+    master_url: Annotated[str | None, Field(description="Spark master URL")] = None
+    master_ui_url: Annotated[str | None, Field(description="Spark master UI URL")] = (
+        None
+    )
+    error: Annotated[
+        bool, Field(description="Whether there was an error during the status check")
+    ] = False

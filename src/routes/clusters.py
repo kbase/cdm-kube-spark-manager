@@ -16,6 +16,7 @@ from src.service.models import (
     DEFAULT_WORKER_MEMORY,
     SparkClusterConfig,
     SparkClusterCreateResponse,
+    SparkClusterStatus,
 )
 from src.spark_manager import KubeSparkManager
 
@@ -84,3 +85,28 @@ async def create_cluster(
     )
 
     return result
+
+
+@router.get(
+    "",
+    response_model=SparkClusterStatus,
+    summary="Get cluster status",
+    description="Retrieves the status of the Spark cluster for the authenticated user. Important: Even with a successful API call (HTTP 200), check the 'error' field in the response to determine if there are issues with the cluster deployments.",
+)
+async def get_cluster_status(
+    user: kb_auth.KBaseUser = Depends(auth),
+) -> SparkClusterStatus:
+    """Get the status of the Spark cluster belonging to the authenticated user.
+
+    Note: A successful API call (HTTP 200) does not necessarily mean the cluster is healthy.
+    Always check the 'error' field in the response to determine if there are issues with
+    the cluster deployments.
+    """
+
+    manager = KubeSparkManager(
+        username=str(user.user),
+    )
+
+    status = manager.get_cluster_status()
+
+    return status
