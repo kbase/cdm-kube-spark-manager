@@ -131,3 +131,6 @@ class SparkClusterStatus(BaseModel):
     master_ui_url: Annotated[str | None, Field(description="Spark master UI URL")] = (
         None
     )
+    error: Annotated[
+        bool, Field(description="Whether there was an error during the status check")
+    ] = False

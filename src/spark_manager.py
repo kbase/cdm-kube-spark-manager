@@ -381,6 +381,7 @@ class KubeSparkManager:
             workers=worker_status,
             master_url=master_url,
             master_ui_url=master_ui_url,
+            error=bool(master_status.error or worker_status.error),
         )
 
         return status
