@@ -16,9 +16,9 @@ MAX_MASTER_CORES = 64
 
 DEFAULT_WORKER_COUNT = 2
 DEFAULT_WORKER_CORES = 10
-DEFAULT_WORKER_MEMORY = 10 * GiB
+DEFAULT_WORKER_MEMORY = "10GiB"
 DEFAULT_MASTER_CORES = 10
-DEFAULT_MASTER_MEMORY = 10 * GiB
+DEFAULT_MASTER_MEMORY = "10GiB"
 
 
 class SparkClusterConfig(BaseModel):
@@ -50,12 +50,12 @@ class SparkClusterConfig(BaseModel):
         ByteSize,
         Field(
             description=f"Memory allocated per worker node (Range: {MIN_MEMORY_BYTES / (1024*1024):.1f} MiB to {MAX_MEMORY_BYTES / GiB:.0f} GiB). Accepts formats like '10GiB', '10240MiB'.",
-            ge=ByteSize(MIN_MEMORY_BYTES),
-            le=ByteSize(MAX_MEMORY_BYTES),
-            examples=["4GiB", "8GiB"],
+            ge=MIN_MEMORY_BYTES,
+            le=MAX_MEMORY_BYTES,
+            examples=[DEFAULT_WORKER_MEMORY, "32GiB"],
             default=DEFAULT_WORKER_MEMORY,
         ),
-    ] = ByteSize(DEFAULT_WORKER_MEMORY)
+    ] = DEFAULT_WORKER_MEMORY  # type: ignore[assignment] - Pydantic handles the string -> ByteSize conversion during validation/initialization.
 
     master_cores: Annotated[
         int,
@@ -72,12 +72,12 @@ class SparkClusterConfig(BaseModel):
         ByteSize,
         Field(
             description=f"Memory allocated for the master node (Range: {MIN_MEMORY_BYTES / (1024*1024):.1f} MiB to {MAX_MEMORY_BYTES / GiB:.0f} GiB). Accepts formats like '10GiB', '10240MiB'.",
-            ge=ByteSize(MIN_MEMORY_BYTES),
-            le=ByteSize(MAX_MEMORY_BYTES),
-            examples=["4GiB", "8GiB"],
+            ge=MIN_MEMORY_BYTES,
+            le=MAX_MEMORY_BYTES,
+            examples=[DEFAULT_MASTER_MEMORY, "16GiB"],
             default=DEFAULT_MASTER_MEMORY,
         ),
-    ] = ByteSize(DEFAULT_MASTER_MEMORY)
+    ] = DEFAULT_MASTER_MEMORY  # type: ignore[assignment] - Pydantic handles the string -> ByteSize conversion during validation/initialization.
 
 
 class SparkClusterCreateResponse(BaseModel):

@@ -12,6 +12,8 @@ from src.service.dependencies import auth
 from src.service.exceptions import ConfigurationLimitExceededError
 from src.service.kb_auth import AdminPermission
 from src.service.models import (
+    DEFAULT_MASTER_MEMORY,
+    DEFAULT_WORKER_MEMORY,
     SparkClusterConfig,
     SparkClusterCreateResponse,
     SparkClusterStatus,
@@ -42,7 +44,10 @@ async def create_cluster(
 
     # Validate config against defaults for non-admin users
     if user.admin_perm != AdminPermission.FULL:
-        default_config = SparkClusterConfig()
+        default_config = SparkClusterConfig(
+            worker_memory=DEFAULT_WORKER_MEMORY,  # type: ignore[assignment]
+            master_memory=DEFAULT_MASTER_MEMORY,  # type: ignore[assignment]
+        )
 
         exceeds_limits = (
             config.worker_count > default_config.worker_count
