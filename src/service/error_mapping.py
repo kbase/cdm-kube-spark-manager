@@ -11,12 +11,13 @@ from fastapi import status
 from src.service.errors import ErrorType
 from src.service.exceptions import (
     AuthenticationError,
+    ClusterDeletionError,
+    ConfigurationLimitExceededError,
     InvalidAuthHeaderError,
     InvalidTokenError,
     MissingRoleError,
     MissingTokenError,
     SparkManagerError,
-    ConfigurationLimitExceededError,
 )
 
 _H400 = status.HTTP_400_BAD_REQUEST
@@ -41,7 +42,10 @@ _ERR_MAP = {
     InvalidTokenError: ErrorMapping(ErrorType.INVALID_TOKEN, _H401),
     MissingRoleError: ErrorMapping(ErrorType.MISSING_ROLE, _H403),
     AuthenticationError: ErrorMapping(ErrorType.AUTHENTICATION_FAILED, _H401),
-    ConfigurationLimitExceededError: ErrorMapping(ErrorType.CONFIGURATION_LIMIT_EXCEEDED, _H400),
+    ConfigurationLimitExceededError: ErrorMapping(
+        ErrorType.CONFIGURATION_LIMIT_EXCEEDED, _H400
+    ),
+    ClusterDeletionError: ErrorMapping(ErrorType.CLUSTER_DELETION_FAILED, _H400),
     SparkManagerError: ErrorMapping(None, status.HTTP_500_INTERNAL_SERVER_ERROR),
 }
 

@@ -2,12 +2,14 @@ import logging
 import os
 import pathlib
 import uuid
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 
 from kubernetes.client.rest import ApiException
 
 import kubernetes as k8s
+from src.service.exceptions import ClusterDeletionError
 from src.service.models import (
+    ClusterDeleteResponse,
     DeploymentStatus,
     SparkClusterCreateResponse,
     SparkClusterStatus,
@@ -433,3 +435,72 @@ class KubeSparkManager:
             status.error = str(e)
 
         return status
+
+    def _attempt_delete(
+        self, delete_fn: Callable, resource_name: str, resource_label: str
+    ) -> dict[str, bool]:
+        """
+        Helper method to delete a Kubernetes resource.
+        """
+        result = {"deleted": False, "resource_exists": True}
+        try:
+            delete_fn(name=resource_name, namespace=self.namespace)
+            logger.info(f"Deleted Spark {resource_label}: {resource_name}")
+            result["deleted"] = True
+        except ApiException as e:
+            if e.status == 404:  # Resource not found
+                logger.warning(
+                    f"Spark {resource_label} {resource_name} not found, skipping deletion"
+                )
+                result["resource_exists"] = False
+            else:
+                logger.error(f"Error deleting Spark {resource_label}: {e}")
+                raise
+        return result
+
+    def delete_cluster(self) -> ClusterDeleteResponse:
+        """Delete the entire Spark cluster for the authenticated user."""
+        try:
+            deletion_results = {
+                "worker_deployment": self._attempt_delete(
+                    self.apps_api.delete_namespaced_deployment,
+                    self.worker_name,
+                    "worker deployment",
+                ),
+                "master_deployment": self._attempt_delete(
+                    self.apps_api.delete_namespaced_deployment,
+                    self.master_name,
+                    "master deployment",
+                ),
+                "master_service": self._attempt_delete(
+                    self.core_api.delete_namespaced_service,
+                    self.master_name,
+                    "master service",
+                ),
+            }
+
+            resources_found = sum(
+                1 for res in deletion_results.values() if res["resource_exists"]
+            )
+            resources_deleted = sum(
+                1 for res in deletion_results.values() if res["deleted"]
+            )
+
+            if resources_found == 0:
+                status_message = (
+                    f"No Spark cluster resources found for user {self.username}"
+                )
+            elif resources_deleted == resources_found:
+                status_message = (
+                    f"Spark cluster for user {self.username} deleted successfully"
+                )
+            else:
+                raise ClusterDeletionError(
+                    f"Spark cluster deletion partially completed for user {self.username}"
+                )
+
+            return ClusterDeleteResponse(message=status_message)
+
+        except Exception as e:
+            logger.error(f"Error deleting Spark cluster: {e}")
+            raise
