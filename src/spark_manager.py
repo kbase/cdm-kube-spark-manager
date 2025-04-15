@@ -409,6 +409,7 @@ class KubeSparkManager:
                 return status
 
             # Update status with actual values
+            # Exercising precaution with the Kubernetes API, so opting to use getattr
             status.available_replicas = (
                 getattr(status_obj, "available_replicas", 0) or 0
             )
