@@ -4,8 +4,7 @@ Main application module for the Spark Manager API.
 
 import logging
 
-from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.exceptions import RequestValidationError
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security.utils import get_authorization_scheme_param
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -14,7 +13,7 @@ from src.routes import health
 from src.service import app_state
 from src.service.config import configure_logging, get_settings
 from src.service.exception_handlers import universal_error_handler
-from src.service.exceptions import InvalidAuthHeaderError, SparkManagerError
+from src.service.exceptions import InvalidAuthHeaderError
 from src.service.models import ErrorResponse
 
 # Configure logging
@@ -67,9 +66,6 @@ def create_application() -> FastAPI:
     )
 
     # Add exception handlers
-    app.add_exception_handler(RequestValidationError, universal_error_handler)
-    app.add_exception_handler(HTTPException, universal_error_handler)
-    app.add_exception_handler(SparkManagerError, universal_error_handler)
     app.add_exception_handler(Exception, universal_error_handler)
 
     # Add middleware
