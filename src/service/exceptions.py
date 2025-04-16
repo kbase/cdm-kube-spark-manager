@@ -15,6 +15,12 @@ class ConfigurationLimitExceededError(SparkManagerError):
     """
 
 
+class ClusterDeletionError(SparkManagerError):
+    """
+    An error thrown when a cluster deletion fails.
+    """
+
+
 class AuthenticationError(SparkManagerError):
     """
     Super class for authentication related errors.

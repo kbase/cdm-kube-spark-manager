@@ -14,6 +14,7 @@ from src.service.kb_auth import AdminPermission
 from src.service.models import (
     DEFAULT_MASTER_MEMORY,
     DEFAULT_WORKER_MEMORY,
+    ClusterDeleteResponse,
     SparkClusterConfig,
     SparkClusterCreateResponse,
     SparkClusterStatus,
@@ -96,10 +97,10 @@ async def create_cluster(
 async def get_cluster_status(
     user: kb_auth.KBaseUser = Depends(auth),
 ) -> SparkClusterStatus:
-    """Get the status of the Spark cluster belonging to the authenticated user.
-
+    """Get the status of the Spark cluster belonging to the authenticated user. 
+    
     Note: A successful API call (HTTP 200) does not necessarily mean the cluster is healthy.
-    Always check the 'error' field in the response to determine if there are issues with
+    Always check the 'error' field in the response to determine if there are issues with 
     the cluster deployments.
     """
 
@@ -110,3 +111,17 @@ async def get_cluster_status(
     status = manager.get_cluster_status()
 
     return status
+
+
+@router.delete(
+    "",
+    response_model=ClusterDeleteResponse,
+    summary="Delete a Spark cluster",
+    description="Deletes a specific Spark cluster for the authenticated user.",
+)
+async def delete_cluster(
+    user: kb_auth.KBaseUser = Depends(auth),
+) -> ClusterDeleteResponse:
+    """Delete a specific Spark cluster for the authenticated user."""
+
+    return KubeSparkManager(username=user.user).delete_cluster()

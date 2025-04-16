@@ -134,3 +134,9 @@ class SparkClusterStatus(BaseModel):
     error: Annotated[
         bool, Field(description="Whether there was an error during the status check")
     ] = False
+
+
+class ClusterDeleteResponse(BaseModel):
+    """Response model for cluster deletion."""
+
+    message: Annotated[str, Field(description="Success deletion message")]

@@ -32,6 +32,9 @@ class ErrorType(Enum):
     CONFIGURATION_LIMIT_EXCEEDED = (10050, "Configuration limit exceeded")
     """ The cluster configuration exceeds allowed limits. """
 
+    CLUSTER_DELETION_FAILED = (10060, "Cluster deletion failed")
+    """ The cluster deletion failed. """
+
     REQUEST_VALIDATION_FAILED = (30010, "Request validation failed")
     """ A request to a service failed validation of the request. """
 
