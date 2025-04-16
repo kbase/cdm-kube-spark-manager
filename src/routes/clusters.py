@@ -124,9 +124,4 @@ async def delete_cluster(
 ) -> ClusterDeleteResponse:
     """Delete a specific Spark cluster for the authenticated user."""
 
-    manager = KubeSparkManager(
-        username=str(user.user),
-    )
-
-    response = manager.delete_cluster()
-    return response
+    return KubeSparkManager(username=user.user).delete_cluster()
