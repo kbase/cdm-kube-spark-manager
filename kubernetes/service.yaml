@@ -14,4 +14,4 @@ spec:
       targetPort: 8000
       name: http
   selector:
-    app: cdm-spark-cluster-manager-api 
+    app: cdm-spark-cluster-manager-api
