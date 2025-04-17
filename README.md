@@ -48,7 +48,7 @@ PYTHONPATH=src pytest -v --cov=src --cov-report=xml tests
 
 ### Cluster Management
 - `POST /clusters` - Creates a new Spark cluster for the authenticated user
-- `GET /clusters` - List the status of all Spark clusters for the authenticated user
+- `GET /clusters` - Get the status of the Spark cluster for the authenticated user, if it exists
 - `DELETE /clusters` - Deletes the Spark cluster belonging to the authenticated user.
 ## Kubernetes Deployment
 
