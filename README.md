@@ -2,6 +2,9 @@
 
 A simple API service for managing Spark clusters in Kubernetes for JupyterHub users. This service acts as an intermediary between user pods and Kubernetes, providing a secure way to manage Spark clusters without requiring direct Kubernetes access.
 
+> **⚠️ Important:** This API service is intended to be deployed only within a Kubernetes environment.
+
+
 ## Features
 
 - Create and manage Spark clusters for individual users
