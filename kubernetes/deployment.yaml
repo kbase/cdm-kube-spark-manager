@@ -21,7 +21,7 @@ spec:
       serviceAccountName: cdm-jupyterhub
       containers:
       - name: cdm-spark-cluster-manager-api
-        image: cdm-kube-spark-manager:latest 
+        image: cdm-kube-spark-manager:latest
         imagePullPolicy: Never
         ports:
         - containerPort: 8000
