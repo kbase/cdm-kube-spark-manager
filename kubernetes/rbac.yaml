@@ -31,7 +31,7 @@ metadata:
   namespace: cdm-jupyterhub
 subjects:
 - kind: ServiceAccount
-  name: spark-cluster-manager-api
+  name: cdm-jupyterhub
   namespace: cdm-jupyterhub
 roleRef:
   kind: Role
