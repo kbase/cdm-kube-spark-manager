@@ -8,8 +8,5 @@ data:
   KUBE_NAMESPACE: "cdm-jupyterhub"
   SPARK_IMAGE: "spark-standalone:latest" 
   SPARK_IMAGE_PULL_POLICY: "IfNotPresent"
-  POSTGRES_URL: "postgres:5432"
-  POSTGRES_DB: "hive"
-  POSTGRES_USER: "hive"
   KBASE_ADMIN_ROLES: "CDM_JUPYTERHUB_ADMIN"
   KBASE_AUTH_URL: "https://ci.kbase.us/services/auth/"
