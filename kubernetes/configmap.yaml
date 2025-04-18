@@ -1,0 +1,12 @@
+# This Kubernetes configmap file is intended for local environment deployment only.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-manager-config
+  namespace: cdm-jupyterhub
+data:
+  KUBE_NAMESPACE: "cdm-jupyterhub"
+  SPARK_IMAGE: "spark-standalone:latest" 
+  SPARK_IMAGE_PULL_POLICY: "IfNotPresent"
+  KBASE_ADMIN_ROLES: "CDM_JUPYTERHUB_ADMIN"
+  KBASE_AUTH_URL: "https://ci.kbase.us/services/auth/"

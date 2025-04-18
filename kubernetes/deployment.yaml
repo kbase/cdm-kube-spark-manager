@@ -1,0 +1,52 @@
+# This Kubernetes deployment file is intended for local environment deployment only.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdm-spark-cluster-manager-api
+  namespace: cdm-jupyterhub
+  labels:
+    app: cdm-spark-cluster-manager-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cdm-spark-cluster-manager-api
+  template:
+    metadata:
+      labels:
+        app: cdm-spark-cluster-manager-api
+    spec:
+      dnsPolicy: ClusterFirst
+      hostname: cdm-spark-cluster-manager-api
+      serviceAccountName: cdm-jupyterhub
+      containers:
+      - name: cdm-spark-cluster-manager-api
+        image: cdm-kube-spark-manager:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+          name: http
+        envFrom:
+        - configMapRef:
+            name: spark-manager-config
+        - secretRef:
+            name: jupyterhub-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 15
+          periodSeconds: 20 
